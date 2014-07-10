@@ -4,7 +4,7 @@
 
     public static class Constants
     {
-        public const string ExecutorUriString = @"executor://fixieVSTestRunner";
+        public const string ExecutorUriString = @"executor://fixie.VSTestRunner";
         public static readonly Uri ExecutorUri = new Uri(ExecutorUriString);
     }
 }
