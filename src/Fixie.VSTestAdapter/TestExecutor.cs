@@ -1,6 +1,5 @@
 ﻿namespace Fixie.VSTestAdapter
 {
-    using System;
     using System.Collections.Generic;
     using System.Reflection;
     using Microsoft.VisualStudio.TestPlatform.ObjectModel;
@@ -9,7 +8,6 @@
     using Results;
 
     [FileExtension(".dll")]
-    [FileExtension(".exe")]
     [ExtensionUri(Constants.ExecutorUriString)]
     public class TestExecutor : ITestExecutor
     {
@@ -17,65 +15,54 @@
 
         public void RunTests(IEnumerable<string> sources, IRunContext runContext, IFrameworkHandle frameworkHandle)
         {
-            var results = new List<AssemblyResult>();
+            var assemblyResults = new List<AssemblyResult>();
             var runner = new Runner(new DummyListener());
 
+            // get the tests to run
             foreach (var source in sources)
             {
-                try
-                {
-                    frameworkHandle.SendMessage(TestMessageLevel.Informational, "======= Now in source " + source);
-                    var assembly = Assembly.LoadFrom(source);
-                    frameworkHandle.SendMessage(TestMessageLevel.Informational, "Going into the runner now.");
-                    results.Add(runner.RunAssembly(assembly));
-                }
-                catch (Exception ex)
-                {
-                    frameworkHandle.SendMessage(TestMessageLevel.Informational, "Oops! I broke. Message: " + ex.Message);
-                }
+                var assembly = Assembly.LoadFrom(source);
+                assemblyResults.Add(runner.RunAssembly(assembly));
             }
 
-            foreach (var result in results)
+            // print the results
+            foreach (var assemblyResult in assemblyResults)
             {
-                frameworkHandle.SendMessage(TestMessageLevel.Informational, 
-                                            string.Format("Name: {0}, Total: {1}, Failed: {2}", 
-                                            result.Name, 
-                                            result.Total, 
-                                            result.Failed));
-                foreach (var conventionResult in result.ConventionResults)
+                foreach (var conventionResult in assemblyResult.ConventionResults)
                 {
-                    frameworkHandle.SendMessage(TestMessageLevel.Informational, "--- convention results");
-                    frameworkHandle.SendMessage(TestMessageLevel.Informational,
-                                                string.Format("Name: {0}, Passed: {1}, Failed: {2}, Skipped: {3}", 
-                                                conventionResult.Name, 
-                                                conventionResult.Passed, 
-                                                conventionResult.Failed, 
-                                                conventionResult.Skipped));
                     foreach (var classResult in conventionResult.ClassResults)
                     {
-                        frameworkHandle.SendMessage(TestMessageLevel.Informational, "--- class results");
-                        frameworkHandle.SendMessage(TestMessageLevel.Informational,
-                                                    string.Format("Name: {0}, Passed: {1}, Failed: {2}, Skipped: {3}", 
-                                                    classResult.Name, 
-                                                    classResult.Passed, 
-                                                    classResult.Failed, 
-                                                    classResult.Skipped));
                         foreach (var caseResult in classResult.CaseResults)
                         {
-                            frameworkHandle.SendMessage(TestMessageLevel.Informational, "--- CASE results");
+                            // send the info back to the test results handler!
+                            var testCase = new TestCase(caseResult.Name, Constants.ExecutorUri, assemblyResult.Name);
+                            var testResult = new TestResult(testCase)
+                            {
+                                Duration = caseResult.Duration,
+                                Outcome = caseResult.Status.ConvertToMsTestOutcome(),
+                                ErrorMessage = (caseResult.ExceptionSummary != null) ? caseResult.ExceptionSummary.Message : string.Empty,
+                                ErrorStackTrace = (caseResult.ExceptionSummary != null) ? caseResult.ExceptionSummary.StackTrace : string.Empty,
+                            };
+
+                            frameworkHandle.RecordResult(testResult);
+                        }
+
+                        // debug message
+                        if (classResult.Failed > 0)
+                        {
                             frameworkHandle.SendMessage(TestMessageLevel.Informational,
-                                                        string.Format("Name: {0}, Status: {1}, Exception: {2}", 
-                                                        caseResult.Name,
-                                                        caseResult.Status.ToDisplayString(),
-                                                        caseResult.ExceptionSummary.ToDisplayString()));                            
-                        }                        
+                                string.Format("Class: {0}, Passed: {1}, Failed: {2}, Skipped: {3}",
+                                    classResult.Name,
+                                    classResult.Passed,
+                                    classResult.Failed,
+                                    classResult.Skipped));
+                        }
                     }
-                    
                 }
             }
 
-            var tests = TestDiscoverer.GetTests(sources, null);
-            RunTests(tests, runContext, frameworkHandle);
+            // var tests = TestDiscoverer.GetTests(sources, null);
+            // RunTests(tests, runContext, frameworkHandle);
         }
 
         public void RunTests(IEnumerable<TestCase> tests, IRunContext runContext, IFrameworkHandle frameworkHandle)
