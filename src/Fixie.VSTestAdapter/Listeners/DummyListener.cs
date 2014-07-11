@@ -1,4 +1,4 @@
-﻿namespace Fixie.VSTestAdapter
+﻿namespace Fixie.VSTestAdapter.Listeners
 {
     using System.Reflection;
     using Results;

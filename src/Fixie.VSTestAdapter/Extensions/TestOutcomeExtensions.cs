@@ -1,11 +1,11 @@
-﻿namespace Fixie.VSTestAdapter
+﻿namespace Fixie.VSTestAdapter.Extensions
 {
     using Microsoft.VisualStudio.TestPlatform.ObjectModel;
     using Results;
 
     public static class TestOutcomeExtensions
     {
-        public static TestOutcome ConvertToMsTestOutcome(this CaseStatus caseResultStatus)
+        public static TestOutcome ToMsTestOutcome(this CaseStatus caseResultStatus)
         {
             switch (caseResultStatus)
             {

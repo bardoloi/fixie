@@ -223,5 +223,28 @@ namespace Fixie
 
             return conventionResult;
         }
+
+        public IEnumerable<Case> GetCasesInAssembly(Assembly assembly)
+        {
+            var result = new List<Case>();
+
+            var candidateTypes = assembly.GetTypes();
+
+            var runContext = new RunContext(assembly, options);
+            var conventions = GetConventions(runContext);
+            
+            foreach (var convention in conventions)
+            {
+                var discoveryModel = new DiscoveryModel(convention.Config);
+
+                foreach (var testClass in discoveryModel.TestClasses(candidateTypes))
+                {
+                    var cases = discoveryModel.TestCases(testClass);
+                    result.AddRange(cases);
+                }
+            }
+
+            return result;
+        }
     }
 }
