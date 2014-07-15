@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Fixie.Conventions;
+using Fixie.Discovery;
 using Fixie.Results;
 
 namespace Fixie
@@ -37,14 +38,6 @@ namespace Fixie
 
         public AssemblyResult RunType(Assembly assembly, Type type)
         {
-            if (type.IsSubclassOf(typeof(Convention)) && !type.IsAbstract)
-            {
-                var singleConventionRunContext = new RunContext(assembly, options);
-                var singleConvention = Construct<Convention>(type, singleConventionRunContext);
-
-                return RunTypes(singleConventionRunContext, singleConvention, assembly.GetTypes());
-            }
-
             var runContext = new RunContext(assembly, options, type);
 
             return RunTypes(runContext, type);
@@ -81,47 +74,9 @@ namespace Fixie
             return Run(runContext, new[] { convention }, types);
         }
 
-        static Convention[] GetConventions(RunContext runContext)
+        private static Convention[] GetConventions(RunContext runContext)
         {
-            var testAssemblyTypes = ConcreteTestAssemblyTypes(runContext);
-
-            var conventionTypes = testAssemblyTypes.Any()
-                ? ExplicitlyAppliedConventionTypes(runContext, testAssemblyTypes)
-                : LocallyDeclaredConventionTypes(runContext);
-
-            var customConventions =
-                conventionTypes
-                    .Select(t => Construct<Convention>(t, runContext))
-                    .ToArray();
-
-            if (customConventions.Any())
-                return customConventions;
-
-            return new[] { (Convention) new DefaultConvention() };
-        }
-
-        static Type[] ConcreteTestAssemblyTypes(RunContext runContext)
-        {
-            return runContext.Assembly
-                .GetTypes()
-                .Where(t => t.IsSubclassOf(typeof(TestAssembly)) && !t.IsAbstract)
-                .ToArray();
-        }
-
-        static Type[] ExplicitlyAppliedConventionTypes(RunContext runContext, Type[] testAssemblyTypes)
-        {
-            return testAssemblyTypes
-                .Select(t => Construct<TestAssembly>(t, runContext))
-                .SelectMany(x => x.ConventionTypes)
-                .ToArray();
-        }
-
-        static Type[] LocallyDeclaredConventionTypes(RunContext runContext)
-        {
-            return runContext.Assembly
-                .GetTypes()
-                .Where(t => t.IsSubclassOf(typeof(Convention)) && !t.IsAbstract)
-                .ToArray();
+            return new ConventionDiscoverer(runContext).GetConventions();
         }
 
         AssemblyResult Run(RunContext runContext, IEnumerable<Convention> conventions, params Type[] candidateTypes)
@@ -142,49 +97,18 @@ namespace Fixie
             return assemblyResult;
         }
 
-        static T Construct<T>(Type type, RunContext runContext)
-        {
-            var constructor = GetConstructor(type);
-
-            try
-            {
-                var parameters = constructor.GetParameters();
-
-                if (parameters.Length == 1 && parameters.Single().ParameterType == typeof(RunContext))
-                    return (T)constructor.Invoke(new object[] { runContext });
-
-                return (T)constructor.Invoke(null);
-            }
-            catch (Exception ex)
-            {
-                throw new Exception(String.Format("Could not construct an instance of type '{0}'.", type.FullName), ex);
-            }
-        }
-
-        static ConstructorInfo GetConstructor(Type type)
-        {
-            var constructors = type.GetConstructors();
-
-            if (constructors.Length == 1)
-                return constructors.Single();
-
-            throw new Exception(
-                String.Format("Could not construct an instance of type '{0}'.  Expected to find exactly 1 public constructor, but found {1}.",
-                    type.FullName, constructors.Length));
-        }
-
         ConventionResult RunConvention(Convention convention, params Type[] candidateTypes)
         {
             var config = convention.Config;
-            var discoveryModel = new DiscoveryModel(config);
+            var caseDiscoverer = new CaseDiscoverer(config);
             var executionModel = new ExecutionModel(config);
             var conventionResult = new ConventionResult(convention.GetType().FullName);
 
-            foreach (var testClass in discoveryModel.TestClasses(candidateTypes))
+            foreach (var testClass in caseDiscoverer.TestClasses(candidateTypes))
             {
                 var classResult = new ClassResult(testClass.FullName);
 
-                var cases = discoveryModel.TestCases(testClass);
+                var cases = caseDiscoverer.TestCases(testClass);
                 var casesBySkipState = cases.ToLookup(executionModel.SkipCase);
                 var casesToSkip = casesBySkipState[true];
                 var casesToExecute = casesBySkipState[false].ToArray();

@@ -4,15 +4,15 @@ using System.Linq;
 using System.Reflection;
 using Fixie.Conventions;
 
-namespace Fixie
+namespace Fixie.Discovery
 {
-    public class DiscoveryModel
+    public class CaseDiscoverer
     {
         readonly Func<Type, bool>[] testClassConditions;
         readonly Func<MethodInfo, bool>[] testMethodConditions;
         readonly Func<MethodInfo, IEnumerable<object[]>> getCaseParameters;
 
-        public DiscoveryModel(ConfigModel config)
+        public CaseDiscoverer(ConfigModel config)
         {
             testClassConditions = config.TestClassConditions.ToArray();
             testMethodConditions = config.TestMethodConditions.ToArray();
@@ -58,12 +58,7 @@ namespace Fixie
             }
 
             if (!any)
-            {
-                if (method.GetParameters().Any())
-                    yield return new UncallableParameterizedCase(method);
-                else
-                    yield return new Case(method);
-            }
+                yield return new Case(method);
         }
     }
 }

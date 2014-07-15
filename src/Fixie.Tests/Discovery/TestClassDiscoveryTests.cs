@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using Fixie.Conventions;
+using Fixie.Discovery;
 
-namespace Fixie.Tests.Conventions
+namespace Fixie.Tests.Discovery
 {
     public class TestClassDiscoveryTests
     {
@@ -98,7 +99,7 @@ namespace Fixie.Tests.Conventions
 
         static IEnumerable<Type> DiscoveredTestClasses(Convention convention)
         {
-            return new DiscoveryModel(convention.Config)
+            return new CaseDiscoverer(convention.Config)
                 .TestClasses(CandidateTypes);
         }
 
@@ -114,7 +115,7 @@ namespace Fixie.Tests.Conventions
         [Inherited]
         class AttributeSampleBase { }
 
-        [NonInheritedAttribute]
+        [NonInherited]
         class AttributeSample : AttributeSampleBase { }
     }
 }

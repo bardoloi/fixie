@@ -1,10 +1,11 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Fixie.Conventions;
-using System;
-using System.Linq;
+using Fixie.Discovery;
 
-namespace Fixie.Tests.Conventions
+namespace Fixie.Tests.Discovery
 {
     public class TestMethodDiscoveryTests
     {
@@ -83,7 +84,7 @@ namespace Fixie.Tests.Conventions
 
         static IEnumerable<string> DiscoveredTestMethods<TTestClass>(Convention convention)
         {
-            return new DiscoveryModel(convention.Config)
+            return new CaseDiscoverer(convention.Config)
                 .TestMethods(typeof(TTestClass))
                 .OrderBy(method => method.Name, StringComparer.Ordinal)
                 .Select(method => method.Name);

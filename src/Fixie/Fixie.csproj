@@ -48,12 +48,13 @@
     <Compile Include="Behaviors\InstanceBehavior.cs" />
     <Compile Include="CaseExecution.cs" />
     <Compile Include="CommandLineOption.cs" />
+    <Compile Include="Discovery\ConventionDiscoverer.cs" />
     <Compile Include="Conventions\AssertionLibraryFilter.cs" />
     <Compile Include="Conventions\ConfigModel.cs" />
     <Compile Include="Conventions\ConstructionFrequency.cs" />
     <Compile Include="Conventions\TestAssembly.cs" />
     <Compile Include="DSL\TestClassExpression.cs" />
-    <Compile Include="DiscoveryModel.cs" />
+    <Compile Include="Discovery\CaseDiscoverer.cs" />
     <Compile Include="DSL\AssertionLibraryExpression.cs" />
     <Compile Include="ExecutionEnvironment.cs" />
     <Compile Include="ExecutionModel.cs" />
@@ -74,7 +75,7 @@
     <Compile Include="ClassExecution.cs" />
     <Compile Include="InstanceExecution.cs" />
     <Compile Include="Foreground.cs" />
-    <Compile Include="Behaviors\Invoke.cs" />
+    <Compile Include="Behaviors\InvokeMethod.cs" />
     <Compile Include="Behaviors\CaseBehavior.cs" />
     <Compile Include="Behaviors\CreateInstancePerCase.cs" />
     <Compile Include="Listener.cs" />
@@ -96,7 +97,6 @@
     <Compile Include="Results\AssemblyResult.cs" />
     <Compile Include="Runner.cs" />
     <Compile Include="SkipResult.cs" />
-    <Compile Include="UncallableParameterizedCase.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Fixie.nuspec" />

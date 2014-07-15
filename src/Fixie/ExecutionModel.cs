@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Fixie.Behaviors;
 using Fixie.Conventions;
@@ -41,11 +42,11 @@ namespace Fixie
             return caseExecutions;
         }
 
-        public void PerformClassLifecycle(ClassExecution classExecution, IReadOnlyList<CaseExecution> caseExecutionsForThisInstance)
+        public void PerformClassLifecycle(Type testClass, IReadOnlyList<CaseExecution> caseExecutionsForThisInstance)
         {
-            var instance = constructTestClass(classExecution.TestClass);
+            var instance = constructTestClass(testClass);
 
-            var instanceExecution = new InstanceExecution(classExecution.TestClass, instance, caseExecutionsForThisInstance);
+            var instanceExecution = new InstanceExecution(testClass, instance, caseExecutionsForThisInstance);
             instanceBehaviorChain.Execute(instanceExecution);
 
             var disposable = instance as IDisposable;
@@ -53,9 +54,32 @@ namespace Fixie
                 disposable.Dispose();
         }
 
-        public void Execute(CaseExecution caseExecution)
+        public void ExecuteCase(object instance, CaseExecution caseExecution)
         {
-            caseBehaviorChain.Execute(caseExecution);
+            using (var console = new RedirectedConsole())
+            {
+                caseExecution.Instance = instance;
+
+                var stopwatch = new Stopwatch();
+                stopwatch.Start();
+
+                try
+                {
+                    caseBehaviorChain.Execute(caseExecution);
+                }
+                catch (Exception exception)
+                {
+                    caseExecution.Fail(exception);
+                }
+
+                stopwatch.Stop();
+
+                caseExecution.Instance = null;
+                caseExecution.Duration = stopwatch.Elapsed;
+                caseExecution.Output = console.Output;
+            }
+
+            Console.Write(caseExecution.Output);
         }
 
         public AssertionLibraryFilter AssertionLibraryFilter
@@ -106,7 +130,7 @@ namespace Fixie
                 .Select(customBehavior => (CaseBehavior)Activator.CreateInstance(customBehavior))
                 .ToList();
 
-            chain.Add(new Invoke());
+            chain.Add(new InvokeMethod());
 
             return new BehaviorChain<CaseExecution>(chain);
         }
