@@ -1,8 +1,10 @@
 ﻿namespace Fixie.VSTestAdapter.Listeners
 {
+    using System;
     using System.Reflection;
     using Results;
 
+    [Serializable]
     public class DummyListener : Listener
     {
         public void AssemblyStarted(Assembly assembly)

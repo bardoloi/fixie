@@ -21,11 +21,15 @@
         /// <param name="frameworkHandle"></param>
         public void RunTests(IEnumerable<string> sources, IRunContext runContext, IFrameworkHandle frameworkHandle)
         {
-            var listener = new DummyListener();
-            var runner = new Runner(listener);
-            var tests = TestDiscoverer.GetTests(sources, null, runner);
-            
+            var listener = new VsConsoleListener(frameworkHandle);
+            var tests = TestDiscoverer.GetTests(sources, null, listener);
+
+            frameworkHandle.SendMessage(TestMessageLevel.Informational, "Starting RunTests");
+            frameworkHandle.SendMessage(TestMessageLevel.Informational, Directory.GetCurrentDirectory());
             RunTests(tests, runContext, frameworkHandle);
+
+            frameworkHandle.SendMessage(TestMessageLevel.Informational, "Done with RunTests!");
+            frameworkHandle.SendMessage(TestMessageLevel.Informational, Directory.GetCurrentDirectory());
         }
 
         /// <summary>
@@ -36,6 +40,22 @@
         /// <param name="frameworkHandle"></param>
         public void RunTests(IEnumerable<TestCase> testCases, IRunContext runContext, IFrameworkHandle frameworkHandle)
         {
+            frameworkHandle.SendMessage(TestMessageLevel.Informational, "Starting RunTests 2");
+
+            #region TODO: remove after testing.
+            foreach (var testCase in testCases)
+            {
+                var res = new TestResult(testCase)
+                {
+                    Outcome = TestOutcome.Passed,
+                    DisplayName = testCase.DisplayName                
+                };
+                frameworkHandle.RecordResult(res);
+            }
+            return;
+
+            #endregion
+
             cancelled = false;
 
             var listener = new DummyListener();
@@ -46,10 +66,9 @@
                 if (cancelled) break;
 
                 var assembly = Utilities.GetAssemblyFromPath(testCase.Source);
-                var methodInfo = Utilities.GetMethodInfo(   assembly,
-                                                            testCase.CodeFilePath,  // this is a hack; we are getting the type info from this field
-                                                            testCase.DisplayName);
 
+                var methodInfo = testCase.LocalExtensionData as MethodInfo;
+                  
                 var runResult = runner.RunMethod(assembly, methodInfo);
 
                 var testResult = new TestResult(testCase)
@@ -63,6 +82,9 @@
             }
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
         public void Cancel()
         {
             cancelled = true;

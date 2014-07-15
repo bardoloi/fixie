@@ -224,9 +224,9 @@ namespace Fixie
             return conventionResult;
         }
 
-        public IEnumerable<Case> GetCasesInAssembly(Assembly assembly)
+        public IEnumerable<MethodInfo> GetTestMethodsInAssembly(Assembly assembly)
         {
-            var result = new List<Case>();
+            var result = new List<MethodInfo>();
 
             var candidateTypes = assembly.GetTypes();
 
@@ -239,12 +239,12 @@ namespace Fixie
 
                 foreach (var testClass in discoveryModel.TestClasses(candidateTypes))
                 {
-                    var cases = discoveryModel.TestCases(testClass);
-                    result.AddRange(cases);
+                    var methods = discoveryModel.TestMethods(testClass);
+                    result.AddRange(methods);
                 }
             }
 
-            return result;
+            return result.AsEnumerable();
         }
     }
 }

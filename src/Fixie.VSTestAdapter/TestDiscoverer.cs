@@ -1,9 +1,12 @@
 ﻿namespace Fixie.VSTestAdapter
 {
+    using System;
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
     using System.Reflection;
+    using System.Text;
+    using System.Threading;
     using Extensions;
     using Listeners;
     using Microsoft.VisualStudio.TestPlatform.ObjectModel;
@@ -25,14 +28,10 @@
         {
             if (discoverySink != null)
             {
-                var listener = new DummyListener();
-                var runner = new Runner(listener);
-
-                var testCases = GetTests(sources, discoverySink, runner);
-                foreach (var testCase in testCases)
-                {
-                    discoverySink.SendTestCase(testCase);
-                }
+                logger.SendMessage(TestMessageLevel.Informational, "Starting getTests()");
+                var listener = new VsLoggerListener(logger);
+                GetTests(sources, discoverySink, listener);
+                logger.SendMessage(TestMessageLevel.Informational, "Ending getTests()");
             }
         }
 
@@ -41,26 +40,72 @@
         /// </summary>
         /// <param name="sources"></param>
         /// <param name="discoverySink"></param>
-        /// <param name="runner"></param>
+        /// <param name="listener"></param>
         /// <returns></returns>
-        internal static IEnumerable<TestCase> GetTests(IEnumerable<string> sources, ITestCaseDiscoverySink discoverySink, Runner runner)
+        internal static IEnumerable<TestCase> GetTests(IEnumerable<string> sources, ITestCaseDiscoverySink discoverySink, Listener listener)
         {
             var discoveredTestCases = new List<TestCase>();
 
-            foreach (var source in sources)
-            {
-                var assembly = Utilities.GetAssemblyFromPath(source);
+            #region Quick Test to verify discoverer is working
 
-                // using local variable to prevent "accessed foreach variable in a closure" warning below
-                var mySource = source;  
-                
-                var casesInAssembly = runner.GetCasesInAssembly(assembly)
-                                            .Select(@case => @case.ToMsTestCase(mySource))
-                                            .Distinct();
+             // foreach (var source in sources)
+             // {
+             //     discoveredTestCases.Add(new TestCase(source + ": The time is now: " + DateTime.Now.ToString("G"), Constants.ExecutorUri, source));
+             //     Thread.Sleep(300);
 
-                discoveredTestCases.AddRange(casesInAssembly);
-            }
-            
+             //     discoveredTestCases.Add(new TestCase(source + ": The time is now: " + DateTime.Now.ToString("G"), Constants.ExecutorUri, source));
+             //     Thread.Sleep(300);
+
+             //     discoveredTestCases.Add(new TestCase(source + ": The time is now: " + DateTime.Now.ToString("G"), Constants.ExecutorUri, source));
+             // }
+            #endregion
+
+           try
+           {
+               foreach (var source in sources)
+               {
+                   using (var environment = new ExecutionEnvironment(source))
+                   {
+                       var runner = environment.Create<VsRunner>();
+                       var fixieTests = runner.GetTestMethods(source, listener);
+                       // var msTests = fixieTests.Select(method => method.AsMSTestCase(source));
+                       // discoveredTestCases.AddRange(msTests);
+                       discoveredTestCases.Add(new TestCase(source + ": The time is now: " + DateTime.Now.ToString("G"), Constants.ExecutorUri,
+                           source));
+                       Thread.Sleep(300);
+                   }
+               }
+           }
+           catch (ReflectionTypeLoadException ex)
+           {
+               var sb = new StringBuilder();
+               foreach (var exSub in ex.LoaderExceptions)
+               {
+                   sb.AppendLine(exSub.Message);
+                   var exFileNotFound = exSub as FileNotFoundException;
+                   if (exFileNotFound != null)
+                   {
+                       if (!string.IsNullOrEmpty(exFileNotFound.FusionLog))
+                       {
+                           sb.AppendLine("Fusion Log:");
+                           sb.AppendLine(exFileNotFound.FusionLog);
+                       }
+                   }
+                   sb.AppendLine();
+               }
+               var errorMessage = sb.ToString();
+
+               discoveredTestCases.Add(new TestCase(errorMessage, Constants.ExecutorUri, sources.First()));
+           }
+           catch (TargetInvocationException ex)
+           {
+               discoveredTestCases.Add(new TestCase(ex.InnerException.ToString(), Constants.ExecutorUri, sources.First()));   
+           }            
+           catch (Exception ex)
+           {
+               discoveredTestCases.Add(new TestCase(ex.Message, Constants.ExecutorUri, sources.First()));   
+           }
+
             if (discoverySink != null)
             {
                 foreach (var testCase in discoveredTestCases)

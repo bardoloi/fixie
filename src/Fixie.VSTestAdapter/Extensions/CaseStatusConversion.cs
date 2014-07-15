@@ -3,9 +3,9 @@
     using Microsoft.VisualStudio.TestPlatform.ObjectModel;
     using Results;
 
-    public static class TestOutcomeExtensions
+    public static class CaseStatusConversion
     {
-        public static TestOutcome ToMsTestOutcome(this CaseStatus caseResultStatus)
+        public static TestOutcome AsMSTestOutcome(this CaseStatus caseResultStatus)
         {
             switch (caseResultStatus)
             {
