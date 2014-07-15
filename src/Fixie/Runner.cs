@@ -159,11 +159,11 @@ namespace Fixie
             
             foreach (var convention in conventions)
             {
-                var discoveryModel = new DiscoveryModel(convention.Config);
+                var discoverer = new CaseDiscoverer(convention.Config);
 
-                foreach (var testClass in discoveryModel.TestClasses(candidateTypes))
+                foreach (var testClass in discoverer.TestClasses(candidateTypes))
                 {
-                    var methods = discoveryModel.TestMethods(testClass);
+                    var methods = discoverer.TestMethods(testClass);
                     result.AddRange(methods);
                 }
             }
