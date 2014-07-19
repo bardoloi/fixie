@@ -21,11 +21,20 @@
         /// <param name="frameworkHandle"></param>
         public void RunTests(IEnumerable<string> sources, IRunContext runContext, IFrameworkHandle frameworkHandle)
         {
-            var listener = new VsConsoleListener(frameworkHandle);
-            var tests = TestDiscoverer.GetTests(sources, null, listener);
+            var tests = TestDiscoverer.GetTests(sources, null);
 
             frameworkHandle.SendMessage(TestMessageLevel.Informational, "Starting RunTests");
             frameworkHandle.SendMessage(TestMessageLevel.Informational, Directory.GetCurrentDirectory());
+            frameworkHandle.SendMessage(TestMessageLevel.Informational, "Current Domain: " + System.AppDomain.CurrentDomain.FriendlyName);
+            frameworkHandle.SendMessage(TestMessageLevel.Informational, Assembly.GetExecutingAssembly().ManifestModule.Name);
+            frameworkHandle.SendMessage(TestMessageLevel.Informational, "Assembly Full Name: " + typeof(VsRunner).Assembly.FullName);
+
+
+            foreach (var source in sources)
+            {
+                frameworkHandle.SendMessage(TestMessageLevel.Informational, "Source: " + source);    
+            }
+
             RunTests(tests, runContext, frameworkHandle);
 
             frameworkHandle.SendMessage(TestMessageLevel.Informational, "Done with RunTests!");
@@ -53,12 +62,11 @@
                 frameworkHandle.RecordResult(res);
             }
             return;
-
             #endregion
 
             cancelled = false;
 
-            var listener = new DummyListener();
+            var listener = new VsConsoleListener(frameworkHandle);
             var runner = new Runner(listener);
 
             foreach (var testCase in testCases)

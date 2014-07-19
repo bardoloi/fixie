@@ -31,21 +31,21 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Fixie, Version=0.0.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\build\Fixie.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.VisualStudio.TestPlatform.ObjectModel, Version=11.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\..\Program Files (x86)\Microsoft Visual Studio 12.0\Common7\IDE\CommonExtensions\Microsoft\TestWindow\Microsoft.VisualStudio.TestPlatform.ObjectModel.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Constants.cs" />
-    <Compile Include="Listeners\DummyListener.cs" />
+    <Compile Include="ExecutionEnvironmentCopy.cs" />
     <Compile Include="Extensions\MethodInfoConversion.cs" />
     <Compile Include="Extensions\CaseStatusConversion.cs" />
     <Compile Include="Listeners\VsLoggerListener.cs" />
@@ -54,13 +54,6 @@
     <Compile Include="TestExecutor.cs" />
     <Compile Include="Utilities.cs" />
     <Compile Include="Listeners\VsConsoleListener.cs" />
-    <Compile Include="VsRunner.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Fixie\Fixie.csproj">
-      <Project>{474ff43b-4580-4032-999b-a717eb7a0cd3}</Project>
-      <Name>Fixie</Name>
-    </ProjectReference>
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

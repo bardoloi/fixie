@@ -29,8 +29,7 @@
             if (discoverySink != null)
             {
                 logger.SendMessage(TestMessageLevel.Informational, "Starting getTests()");
-                var listener = new VsLoggerListener(logger);
-                GetTests(sources, discoverySink, listener);
+                GetTests(sources, discoverySink);
                 logger.SendMessage(TestMessageLevel.Informational, "Ending getTests()");
             }
         }
@@ -40,71 +39,73 @@
         /// </summary>
         /// <param name="sources"></param>
         /// <param name="discoverySink"></param>
-        /// <param name="listener"></param>
         /// <returns></returns>
-        internal static IEnumerable<TestCase> GetTests(IEnumerable<string> sources, ITestCaseDiscoverySink discoverySink, Listener listener)
+        internal static IEnumerable<TestCase> GetTests(IEnumerable<string> sources, ITestCaseDiscoverySink discoverySink)
         {
             var discoveredTestCases = new List<TestCase>();
 
             #region Quick Test to verify discoverer is working
 
-             // foreach (var source in sources)
-             // {
-             //     discoveredTestCases.Add(new TestCase(source + ": The time is now: " + DateTime.Now.ToString("G"), Constants.ExecutorUri, source));
-             //     Thread.Sleep(300);
+/*              foreach (var source in sources)
+              {
+                  discoveredTestCases.Add(new TestCase(source + ": The time is now: " + DateTime.Now.ToString("G"), Constants.ExecutorUri, source));
+                  Thread.Sleep(300);
 
-             //     discoveredTestCases.Add(new TestCase(source + ": The time is now: " + DateTime.Now.ToString("G"), Constants.ExecutorUri, source));
-             //     Thread.Sleep(300);
+                  discoveredTestCases.Add(new TestCase(source + ": The time is now: " + DateTime.Now.ToString("G"), Constants.ExecutorUri, source));
+                  Thread.Sleep(300);
 
-             //     discoveredTestCases.Add(new TestCase(source + ": The time is now: " + DateTime.Now.ToString("G"), Constants.ExecutorUri, source));
-             // }
+                  discoveredTestCases.Add(new TestCase(source + ": The time is now: " + DateTime.Now.ToString("G"), Constants.ExecutorUri, source));
+              }*/
+
             #endregion
 
-           try
-           {
-               foreach (var source in sources)
-               {
-                   using (var environment = new ExecutionEnvironment(source))
-                   {
-                       var runner = environment.Create<VsRunner>();
-                       var fixieTests = runner.GetTestMethods(source, listener);
-                       // var msTests = fixieTests.Select(method => method.AsMSTestCase(source));
-                       // discoveredTestCases.AddRange(msTests);
-                       discoveredTestCases.Add(new TestCase(source + ": The time is now: " + DateTime.Now.ToString("G"), Constants.ExecutorUri,
-                           source));
-                       Thread.Sleep(300);
-                   }
-               }
-           }
-           catch (ReflectionTypeLoadException ex)
-           {
-               var sb = new StringBuilder();
-               foreach (var exSub in ex.LoaderExceptions)
-               {
-                   sb.AppendLine(exSub.Message);
-                   var exFileNotFound = exSub as FileNotFoundException;
-                   if (exFileNotFound != null)
-                   {
-                       if (!string.IsNullOrEmpty(exFileNotFound.FusionLog))
-                       {
-                           sb.AppendLine("Fusion Log:");
-                           sb.AppendLine(exFileNotFound.FusionLog);
-                       }
-                   }
-                   sb.AppendLine();
-               }
-               var errorMessage = sb.ToString();
+            try
+            {
+                foreach (var source in sources)
+                {
+                    using (var environment = new ExecutionEnvironmentCopy(source))
+                    {
+                        var msTests = new List<TestCase>();
+                         var runner = environment.Create<VsRunner>();
+                         var fixieTests = runner.GetTestMethods(source);
+                         // var fixieTests = runner.RunAssembly(source, new string[] {});
+                         //var msTests = fixieTests.Select(method => method.AsMSTestCase(source));
+                         discoveredTestCases.AddRange(msTests);
+                        // discoveredTestCases.Add(new TestCase(source + ": The time is now: " + DateTime.Now.ToString("G"), Constants.ExecutorUri, source));
+                        // Thread.Sleep(300);
+                    }
+                }
+            }
+            catch (ReflectionTypeLoadException ex)
+            {
+                var sb = new StringBuilder();
+                foreach (var exSub in ex.LoaderExceptions)
+                {
+                    sb.AppendLine(exSub.Message);
+                    var exFileNotFound = exSub as FileNotFoundException;
+                    if (exFileNotFound != null)
+                    {
+                        if (!string.IsNullOrEmpty(exFileNotFound.FusionLog))
+                        {
+                            sb.AppendLine("Fusion Log:");
+                            sb.AppendLine(exFileNotFound.FusionLog);
+                        }
+                    }
+                    sb.AppendLine();
+                }
+                var errorMessage = sb.ToString();
 
-               discoveredTestCases.Add(new TestCase(errorMessage, Constants.ExecutorUri, sources.First()));
-           }
-           catch (TargetInvocationException ex)
-           {
-               discoveredTestCases.Add(new TestCase(ex.InnerException.ToString(), Constants.ExecutorUri, sources.First()));   
-           }            
-           catch (Exception ex)
-           {
-               discoveredTestCases.Add(new TestCase(ex.Message, Constants.ExecutorUri, sources.First()));   
-           }
+                discoveredTestCases.Add(new TestCase(errorMessage, Constants.ExecutorUri, sources.First()));
+            }
+            catch (TargetInvocationException ex)
+            {
+                discoveredTestCases.Add(new TestCase(ex.InnerException.ToString(), Constants.ExecutorUri, sources.First()));
+            }
+            catch (Exception ex)
+            {
+                discoveredTestCases.Add(new TestCase(ex.Message, Constants.ExecutorUri, sources.First()));
+            }
+
 
             if (discoverySink != null)
             {

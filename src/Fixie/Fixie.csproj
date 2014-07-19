@@ -59,6 +59,7 @@
     <Compile Include="ExecutionEnvironment.cs" />
     <Compile Include="ExecutionModel.cs" />
     <Compile Include="GenericArgumentResolver.cs" />
+    <Compile Include="Listeners\DummyListener.cs" />
     <Compile Include="Reports\NUnitXmlReport.cs" />
     <Compile Include="RedirectedConsole.cs" />
     <Compile Include="Behaviors\ClassBehavior.cs" />
@@ -97,6 +98,7 @@
     <Compile Include="Results\AssemblyResult.cs" />
     <Compile Include="Runner.cs" />
     <Compile Include="SkipResult.cs" />
+    <Compile Include="VsRunner.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Fixie.nuspec" />
