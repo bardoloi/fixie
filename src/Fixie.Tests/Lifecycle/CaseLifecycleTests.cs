@@ -1,5 +1,4 @@
 using System;
-using Fixie.Behaviors;
 
 namespace Fixie.Tests.Lifecycle
 {
@@ -7,7 +6,7 @@ namespace Fixie.Tests.Lifecycle
     {
         class Inner : CaseBehavior
         {
-            public void Execute(CaseExecution caseExecution, Action next)
+            public void Execute(Case @case, Action next)
             {
                 Console.WriteLine("Inner Before");
                 next();
@@ -17,7 +16,7 @@ namespace Fixie.Tests.Lifecycle
 
         class Outer : CaseBehavior
         {
-            public void Execute(CaseExecution caseExecution, Action next)
+            public void Execute(Case @case, Action next)
             {
                 Console.WriteLine("Outer Before");
                 next();
@@ -27,7 +26,7 @@ namespace Fixie.Tests.Lifecycle
 
         class DoNothing : CaseBehavior
         {
-            public void Execute(CaseExecution caseExecution, Action next)
+            public void Execute(Case @case, Action next)
             {
                 //Behavior chooses not to invoke next().
                 //Since the cases are never invoked, they don't
@@ -38,7 +37,7 @@ namespace Fixie.Tests.Lifecycle
 
         class ThrowException : CaseBehavior
         {
-            public void Execute(CaseExecution caseExecution, Action next)
+            public void Execute(Case @case, Action next)
             {
                 Console.WriteLine("Unsafe case execution behavior");
                 throw new Exception("Unsafe case execution behavior threw!");
@@ -47,7 +46,7 @@ namespace Fixie.Tests.Lifecycle
 
         class ThrowPreservedException : CaseBehavior
         {
-            public void Execute(CaseExecution caseExecution, Action next)
+            public void Execute(Case @case, Action next)
             {
                 Console.WriteLine("Unsafe case execution behavior");
                 try
@@ -61,7 +60,7 @@ namespace Fixie.Tests.Lifecycle
             }
         }
 
-        public void ShouldAllowWrappingCaseWithBehaviorsWhenConstructingPerCase()
+        public void ShouldAllowWrappingCaseWithBehaviorTypesWhenConstructingPerCase()
         {
             Convention.ClassExecution
                       .CreateInstancePerCase();
@@ -89,7 +88,7 @@ namespace Fixie.Tests.Lifecycle
                 "Dispose");
         }
 
-        public void ShouldAllowWrappingCaseWithBehaviorsWhenConstructingPerClass()
+        public void ShouldAllowWrappingCaseWithBehaviorTypesWhenConstructingPerClass()
         {
             Convention.ClassExecution
                       .CreateInstancePerClass();
@@ -97,6 +96,134 @@ namespace Fixie.Tests.Lifecycle
             Convention.CaseExecution
                       .Wrap<Inner>()
                       .Wrap<Outer>();
+
+            var output = Run();
+
+            output.ShouldHaveResults(
+                "SampleTestClass.Pass passed.",
+                "SampleTestClass.Fail failed: 'Fail' failed!");
+
+            output.ShouldHaveLifecycle(
+                ".ctor",
+                "Outer Before", "Inner Before",
+                "Pass",
+                "Inner After", "Outer After",
+                "Outer Before", "Inner Before",
+                "Fail",
+                "Inner After", "Outer After",
+                "Dispose");
+        }
+
+        public void ShouldAllowWrappingCaseWithBehaviorInstancesWhenConstructingPerCase()
+        {
+            Convention.ClassExecution
+                      .CreateInstancePerCase();
+
+            Convention.CaseExecution
+                      .Wrap(new Inner())
+                      .Wrap(new Outer());
+
+            var output = Run();
+
+            output.ShouldHaveResults(
+                "SampleTestClass.Pass passed.",
+                "SampleTestClass.Fail failed: 'Fail' failed!");
+
+            output.ShouldHaveLifecycle(
+                ".ctor",
+                "Outer Before", "Inner Before",
+                "Pass",
+                "Inner After", "Outer After",
+                "Dispose",
+                ".ctor",
+                "Outer Before", "Inner Before",
+                "Fail",
+                "Inner After", "Outer After",
+                "Dispose");
+        }
+
+        public void ShouldAllowWrappingCaseWithBehaviorInstancesWhenConstructingPerClass()
+        {
+            Convention.ClassExecution
+                      .CreateInstancePerClass();
+
+            Convention.CaseExecution
+                      .Wrap(new Inner())
+                      .Wrap(new Outer());
+
+            var output = Run();
+
+            output.ShouldHaveResults(
+                "SampleTestClass.Pass passed.",
+                "SampleTestClass.Fail failed: 'Fail' failed!");
+
+            output.ShouldHaveLifecycle(
+                ".ctor",
+                "Outer Before", "Inner Before",
+                "Pass",
+                "Inner After", "Outer After",
+                "Outer Before", "Inner Before",
+                "Fail",
+                "Inner After", "Outer After",
+                "Dispose");
+        }
+
+        public void ShouldAllowWrappingCaseWithBehaviorLambdasWhenConstructingPerCase()
+        {
+            Convention.ClassExecution
+                      .CreateInstancePerCase();
+
+            Convention.CaseExecution
+                      .Wrap((@case, next) =>
+                      {
+                          Console.WriteLine("Inner Before");
+                          next();
+                          Console.WriteLine("Inner After");
+                      })
+                      .Wrap((@case, next) =>
+                      {
+                          Console.WriteLine("Outer Before");
+                          next();
+                          Console.WriteLine("Outer After");
+                      });
+
+            var output = Run();
+
+            output.ShouldHaveResults(
+                "SampleTestClass.Pass passed.",
+                "SampleTestClass.Fail failed: 'Fail' failed!");
+
+            output.ShouldHaveLifecycle(
+                ".ctor",
+                "Outer Before", "Inner Before",
+                "Pass",
+                "Inner After", "Outer After",
+                "Dispose",
+                ".ctor",
+                "Outer Before", "Inner Before",
+                "Fail",
+                "Inner After", "Outer After",
+                "Dispose");
+        }
+
+        public void ShouldAllowWrappingCaseWithBehaviorLambdasWhenConstructingPerClass()
+        {
+            Convention.ClassExecution
+                      .CreateInstancePerClass();
+
+            Convention.CaseExecution
+                      .Wrap((@case, next) =>
+                      {
+                          Console.WriteLine("Inner Before");
+                          next();
+                          Console.WriteLine("Inner After");
+                      })
+                      .Wrap((@case, next) =>
+                      {
+                          Console.WriteLine("Outer Before");
+                          next();
+                          Console.WriteLine("Outer After");
+                      });
 
             var output = Run();
 

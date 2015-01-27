@@ -1,5 +1,4 @@
-﻿using System.Reflection;
-using Fixie.Results;
+﻿using Fixie.Execution;
 using TestDriven.Framework;
 
 namespace Fixie.TestDriven
@@ -13,7 +12,7 @@ namespace Fixie.TestDriven
             this.tdnet = tdnet;
         }
 
-        public void AssemblyStarted(Assembly assembly)
+        public void AssemblyStarted(AssemblyInfo assembly)
         {
         }
 
@@ -21,35 +20,32 @@ namespace Fixie.TestDriven
         {
             tdnet.TestFinished(new TestResult
             {
-                Name = result.Case.Name,
+                Name = result.Name,
                 State = TestState.Ignored
             });
         }
 
         public void CasePassed(PassResult result)
         {
-            var @case = result.Case;
             tdnet.TestFinished(new TestResult
             {
-                Name = @case.Name,
+                Name = result.Name,
                 State = TestState.Passed
             });
         }
 
         public void CaseFailed(FailResult result)
         {
-            var @case = result.Case;
-
             tdnet.TestFinished(new TestResult
             {
-                Name = @case.Name,
+                Name = result.Name,
                 State = TestState.Failed,
-                Message = result.ExceptionSummary.DisplayName,
-                StackTrace = result.ExceptionSummary.StackTrace,
+                Message = result.Exceptions.PrimaryException.DisplayName,
+                StackTrace = result.Exceptions.CompoundStackTrace,
             });
         }
 
-        public void AssemblyCompleted(Assembly assembly, AssemblyResult result)
+        public void AssemblyCompleted(AssemblyInfo assembly, AssemblyResult result)
         {
         }
     }

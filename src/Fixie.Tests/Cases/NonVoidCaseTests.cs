@@ -2,7 +2,7 @@ using System;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
-using Fixie.Behaviors;
+using Fixie.Internal;
 using Should;
 
 namespace Fixie.Tests.Cases
@@ -128,17 +128,17 @@ namespace Fixie.Tests.Cases
 
         class TreatBoolReturnValuesAsAssertions : CaseBehavior
         {
-            public void Execute(CaseExecution caseExecution, Action next)
+            public void Execute(Case @case, Action next)
             {
                 next();
 
-                Console.WriteLine(caseExecution.Case.Method.Name + " " + (caseExecution.Result ?? "null"));
+                Console.WriteLine(@case.Method.Name + " " + (@case.ReturnValue ?? "null"));
 
-                if (caseExecution.Exceptions.Any())
+                if (@case.Exceptions.Any())
                     return;
 
-                if (caseExecution.Result is bool)
-                    if (!(bool)caseExecution.Result)
+                if (@case.ReturnValue is bool)
+                    if (!(bool)@case.ReturnValue)
                         throw new Exception("Boolean test case returned false!");
             }
         }

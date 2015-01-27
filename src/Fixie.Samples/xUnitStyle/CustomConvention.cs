@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using Fixie.Behaviors;
-using Fixie.Conventions;
 
 namespace Fixie.Samples.xUnitStyle
 {
@@ -24,7 +22,7 @@ namespace Fixie.Samples.xUnitStyle
                 .Wrap<PrepareAndDisposeFixtureData>()
                 .ShuffleCases();
 
-            InstanceExecution
+            FixtureExecution
                 .Wrap<InjectFixtureData>();
         }
 
@@ -35,18 +33,18 @@ namespace Fixie.Samples.xUnitStyle
 
         class PrepareAndDisposeFixtureData : ClassBehavior
         {
-            public void Execute(ClassExecution classExecution, Action next)
+            public void Execute(Class testClass, Action next)
             {
-                SetUp(classExecution);
+                SetUp(testClass);
                 next();
                 TearDown();
             }
 
-            void SetUp(ClassExecution classExecution)
+            void SetUp(Class testClass)
             {
                 fixtures.Clear();
 
-                foreach (var @interface in FixtureInterfaces(classExecution.TestClass))
+                foreach (var @interface in FixtureInterfaces(testClass.Type))
                 {
                     var fixtureDataType = @interface.GetGenericArguments()[0];
 
@@ -70,12 +68,12 @@ namespace Fixie.Samples.xUnitStyle
             }
         }
 
-        class InjectFixtureData : InstanceBehavior
+        class InjectFixtureData : FixtureBehavior
         {
-            public void Execute(InstanceExecution instanceExecution, Action next)
+            public void Execute(Fixture fixture, Action next)
             {
                 foreach (var injectionMethod in fixtures.Keys)
-                    injectionMethod.Invoke(instanceExecution.Instance, new[] { fixtures[injectionMethod] });
+                    injectionMethod.Invoke(fixture.Instance, new[] { fixtures[injectionMethod] });
 
                 next();
             }

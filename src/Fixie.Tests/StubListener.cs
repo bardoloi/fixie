@@ -1,9 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
+﻿using System.Collections.Generic;
 using System.Text;
-using Fixie.Results;
+using Fixie.Execution;
 
 namespace Fixie.Tests
 {
@@ -11,39 +8,54 @@ namespace Fixie.Tests
     {
         readonly List<string> log = new List<string>();
 
-        public void AssemblyStarted(Assembly assembly)
+        public void AssemblyStarted(AssemblyInfo assembly)
         {
         }
 
         public void CaseSkipped(SkipResult result)
         {
-            log.Add(string.Format("{0} skipped{1}", result.Case.Name, result.Reason == null ? "." : ": " + result.Reason));
+            log.Add(string.Format("{0} skipped{1}", result.Name, result.SkipReason == null ? "." : ": " + result.SkipReason));
         }
 
         public void CasePassed(PassResult result)
         {
-            var @case = result.Case;
-            log.Add(string.Format("{0} passed.", @case.Name));
+            log.Add(string.Format("{0} passed.", result.Name));
         }
 
         public void CaseFailed(FailResult result)
         {
-            var @case = result.Case;
-
             var entry = new StringBuilder();
 
-            entry.Append(string.Format("{0} failed: {1}", @case.Name, result.ExceptionSummary.Message));
+            var primaryException = result.Exceptions.PrimaryException;
 
-            foreach (var exception in result.Exceptions.Skip(1))
+            entry.AppendFormat("{0} failed: {1}", result.Name, primaryException.Message);
+
+            var walk = primaryException;
+            while (walk.InnerException != null)
+            {
+                walk = walk.InnerException;
+                entry.AppendLine();
+                entry.AppendFormat("    Inner Exception: {0}", walk.Message);
+            }
+
+            foreach (var secondaryException in result.Exceptions.SecondaryExceptions)
             {
                 entry.AppendLine();
-                entry.Append(string.Format("    Secondary Failure: {0}", exception.Message));
+                entry.AppendFormat("    Secondary Failure: {0}", secondaryException.Message);
+
+                walk = secondaryException;
+                while (walk.InnerException != null)
+                {
+                    walk = walk.InnerException;
+                    entry.AppendLine();
+                    entry.AppendFormat("        Inner Exception: {0}", walk.Message);
+                }
             }
 
             log.Add(entry.ToString());
         }
 
-        public void AssemblyCompleted(Assembly assembly, AssemblyResult result)
+        public void AssemblyCompleted(AssemblyInfo assembly, AssemblyResult result)
         {
         }
 

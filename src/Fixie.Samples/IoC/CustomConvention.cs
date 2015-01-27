@@ -1,5 +1,4 @@
 ﻿using System;
-using Fixie.Conventions;
 
 namespace Fixie.Samples.IoC
 {
@@ -12,7 +11,7 @@ namespace Fixie.Samples.IoC
             container = InitContainerForIntegrationTests();
 
             Classes
-                .Where(type => type.IsInNamespace(GetType().Namespace))
+                .InTheSameNamespaceAs(typeof(CustomConvention))
                 .NameEndsWith("Tests");
 
             Methods

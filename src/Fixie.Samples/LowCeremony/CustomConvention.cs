@@ -1,19 +1,17 @@
 ﻿using System;
 using System.Linq;
 using System.Reflection;
-using Fixie.Behaviors;
-using Fixie.Conventions;
 
 namespace Fixie.Samples.LowCeremony
 {
     public class CustomConvention : Convention
     {
-        static readonly string[] LifecycleMethods = new[] { "FixtureSetUp", "FixtureTearDown", "SetUp", "TearDown" };
+        static readonly string[] LifecycleMethods = { "FixtureSetUp", "FixtureTearDown", "SetUp", "TearDown" };
 
         public CustomConvention()
         {
             Classes
-                .Where(type => type.IsInNamespace(GetType().Namespace))
+                .InTheSameNamespaceAs(typeof(CustomConvention))
                 .NameEndsWith("Tests");
 
             Methods
@@ -24,7 +22,7 @@ namespace Fixie.Samples.LowCeremony
                 .CreateInstancePerClass()
                 .SortCases((caseA, caseB) => String.Compare(caseA.Name, caseB.Name, StringComparison.Ordinal));
 
-            InstanceExecution
+            FixtureExecution
                 .Wrap<CallFixtureSetUpTearDownMethodsByName>();
 
             CaseExecution
@@ -33,21 +31,21 @@ namespace Fixie.Samples.LowCeremony
 
         class CallSetUpTearDownMethodsByName : CaseBehavior
         {
-            public void Execute(CaseExecution caseExecution, Action next)
+            public void Execute(Case @case, Action next)
             {
-                caseExecution.Case.Class.TryInvoke("SetUp", caseExecution.Instance);
+                @case.Class.TryInvoke("SetUp", @case.Fixture.Instance);
                 next();
-                caseExecution.Case.Class.TryInvoke("TearDown", caseExecution.Instance);
+                @case.Class.TryInvoke("TearDown", @case.Fixture.Instance);
             }
         }
 
-        class CallFixtureSetUpTearDownMethodsByName : InstanceBehavior
+        class CallFixtureSetUpTearDownMethodsByName : FixtureBehavior
         {
-            public void Execute(InstanceExecution instanceExecution, Action next)
+            public void Execute(Fixture fixture, Action next)
             {
-                instanceExecution.TestClass.TryInvoke("FixtureSetUp", instanceExecution.Instance);
+                fixture.Class.Type.TryInvoke("FixtureSetUp", fixture.Instance);
                 next();
-                instanceExecution.TestClass.TryInvoke("FixtureTearDown", instanceExecution.Instance);
+                fixture.Class.Type.TryInvoke("FixtureTearDown", fixture.Instance);
             }
         }
     }

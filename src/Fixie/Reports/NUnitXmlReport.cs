@@ -1,8 +1,8 @@
-﻿using Fixie.Results;
-using System;
+﻿using System;
 using System.Globalization;
 using System.Linq;
 using System.Xml.Linq;
+using Fixie.Execution;
 
 namespace Fixie.Reports
 {
@@ -67,8 +67,8 @@ namespace Fixie.Reports
             {
                 @case.Add(
                     new XElement("failure",
-                        new XElement("message", new XCData(caseResult.ExceptionSummary.Message)),
-                        new XElement("stack-trace", new XCData(caseResult.ExceptionSummary.StackTrace))));
+                        new XElement("message", new XCData(caseResult.Exceptions.PrimaryException.Message)),
+                        new XElement("stack-trace", new XCData(caseResult.Exceptions.CompoundStackTrace))));
             }
 
             return @case;

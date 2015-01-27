@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using Fixie.Conventions;
 
 namespace Fixie.Samples.Parameterized
 {
@@ -11,7 +10,7 @@ namespace Fixie.Samples.Parameterized
         public CustomConvention()
         {
             Classes
-                .Where(type => type.IsInNamespace(GetType().Namespace))
+                .InTheSameNamespaceAs(typeof(CustomConvention))
                 .NameEndsWith("Tests");
 
             Methods
@@ -21,12 +20,16 @@ namespace Fixie.Samples.Parameterized
                 .CreateInstancePerClass()
                 .SortCases((caseA, caseB) => String.Compare(caseA.Name, caseB.Name, StringComparison.Ordinal));
 
-            Parameters(FromInputAttributes);
+            Parameters
+                .Add<InputAttributeParameterSource>();
         }
 
-        static IEnumerable<object[]> FromInputAttributes(MethodInfo method)
+        class InputAttributeParameterSource : ParameterSource
         {
-            return method.GetCustomAttributes<InputAttribute>(true).Select(input => input.Parameters);
+            public IEnumerable<object[]> GetParameters(MethodInfo method)
+            {
+                return method.GetCustomAttributes<InputAttribute>(true).Select(input => input.Parameters);
+            }
         }
     }
 }

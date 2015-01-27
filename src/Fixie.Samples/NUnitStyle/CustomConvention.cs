@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using Fixie.Behaviors;
-using Fixie.Conventions;
 
 namespace Fixie.Samples.NUnitStyle
 {
@@ -21,7 +19,7 @@ namespace Fixie.Samples.NUnitStyle
                     .CreateInstancePerClass()
                     .SortCases((caseA, caseB) => String.Compare(caseA.Name, caseB.Name, StringComparison.Ordinal));
 
-            InstanceExecution
+            FixtureExecution
                 .Wrap<FixtureSetUpTearDown>();
 
             CaseExecution
@@ -32,58 +30,58 @@ namespace Fixie.Samples.NUnitStyle
 
     class SupportExpectedExceptions : CaseBehavior
     {
-        public void Execute(CaseExecution caseExecution, Action next)
+        public void Execute(Case @case, Action next)
         {
             next();
 
-            var attribute = caseExecution.Case.Method.GetCustomAttributes<ExpectedExceptionAttribute>(false).SingleOrDefault();
+            var attribute = @case.Method.GetCustomAttributes<ExpectedExceptionAttribute>(false).SingleOrDefault();
 
             if (attribute == null)
                 return;
 
-            if (caseExecution.Exceptions.Count > 1)
+            if (@case.Exceptions.Count > 1)
                 return;
 
-            var exception = caseExecution.Exceptions.SingleOrDefault();
+            var exception = @case.Exceptions.SingleOrDefault();
 
             if (exception == null)
                 throw new Exception("Expected exception of type " + attribute.ExpectedException + ".");
 
             if (exception.GetType() != attribute.ExpectedException)
             {
-                caseExecution.Pass();
+                @case.ClearExceptions();
 
                 throw new Exception("Expected exception of type " + attribute.ExpectedException + " but an exception of type " + exception.GetType() + " was thrown.", exception);
             }
 
             if (attribute.ExpectedMessage != null && exception.Message != attribute.ExpectedMessage)
             {
-                caseExecution.Pass();
+                @case.ClearExceptions();
 
                 throw new Exception("Expected exception message '" + attribute.ExpectedMessage + "'" + " but was '" + exception.Message + "'.", exception);
             }
 
-            caseExecution.Pass();
+            @case.ClearExceptions();
         }
     }
 
     class SetUpTearDown : CaseBehavior
     {
-        public void Execute(CaseExecution caseExecution, Action next)
+        public void Execute(Case @case, Action next)
         {
-            caseExecution.Case.Class.InvokeAll<SetUpAttribute>(caseExecution.Instance);
+            @case.Class.InvokeAll<SetUpAttribute>(@case.Fixture.Instance);
             next();
-            caseExecution.Case.Class.InvokeAll<TearDownAttribute>(caseExecution.Instance);
+            @case.Class.InvokeAll<TearDownAttribute>(@case.Fixture.Instance);
         }
     }
 
-    class FixtureSetUpTearDown : InstanceBehavior
+    class FixtureSetUpTearDown : FixtureBehavior
     {
-        public void Execute(InstanceExecution instanceExecution, Action next)
+        public void Execute(Fixture fixture, Action next)
         {
-            instanceExecution.TestClass.InvokeAll<TestFixtureSetUpAttribute>(instanceExecution.Instance);
+            fixture.Class.Type.InvokeAll<TestFixtureSetUpAttribute>(fixture.Instance);
             next();
-            instanceExecution.TestClass.InvokeAll<TestFixtureTearDownAttribute>(instanceExecution.Instance);
+            fixture.Class.Type.InvokeAll<TestFixtureTearDownAttribute>(fixture.Instance);
         }
     }
 

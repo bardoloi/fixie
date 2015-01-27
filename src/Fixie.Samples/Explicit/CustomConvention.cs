@@ -1,13 +1,11 @@
-﻿using Fixie.Conventions;
-
-namespace Fixie.Samples.Explicit
+﻿namespace Fixie.Samples.Explicit
 {
     public class CustomConvention : Convention
     {
-        public CustomConvention(RunContext runContext)
+        public CustomConvention()
         {
             Classes
-                .Where(type => type.IsInNamespace(GetType().Namespace))
+                .InTheSameNamespaceAs(typeof(CustomConvention))
                 .NameEndsWith("Tests");
 
             Methods
@@ -16,7 +14,7 @@ namespace Fixie.Samples.Explicit
                 {
                     var isMarkedExplicit = method.Has<ExplicitAttribute>();
 
-                    return !isMarkedExplicit || runContext.TargetMember == method;
+                    return !isMarkedExplicit || TargetMember == method;
                 });
 
             ClassExecution

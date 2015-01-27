@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Reflection;
 using Should;
 
 namespace Fixie.Tests.Lifecycle
@@ -224,11 +226,85 @@ namespace Fixie.Tests.Lifecycle
             output.ShouldHaveLifecycle();
         }
 
+        public void ShouldSkipConstructingPerCaseWhenAllCasesFailCustomParameterGeneration()
+        {
+            Convention.ClassExecution
+                      .CreateInstancePerCase();
+
+            Convention.Parameters.Add<BuggyParameterSource>();
+
+            var output = Run();
+
+            output.ShouldHaveResults(
+                "SampleTestClass.Pass failed: Exception thrown while attempting to yield input parameters for method: Pass",
+                "SampleTestClass.Fail failed: Exception thrown while attempting to yield input parameters for method: Fail");
+
+            output.ShouldHaveLifecycle();
+        }
+
+        public void ShouldSkipConstructingPerClassWhenAllCasesFailCustomParameterGeneration()
+        {
+            Convention.ClassExecution
+                      .CreateInstancePerClass();
+
+            Convention.Parameters.Add<BuggyParameterSource>();
+
+            var output = Run();
+
+            output.ShouldHaveResults(
+                "SampleTestClass.Pass failed: Exception thrown while attempting to yield input parameters for method: Pass",
+                "SampleTestClass.Fail failed: Exception thrown while attempting to yield input parameters for method: Fail");
+
+            output.ShouldHaveLifecycle();
+        }
+
+        public void ShouldSkipConstructingPerCaseUsingCustomFactoryWhenAllCasesFailCustomParameterGeneration()
+        {
+            Convention.ClassExecution
+                      .CreateInstancePerCase()
+                      .UsingFactory(Factory);
+
+            Convention.Parameters.Add<BuggyParameterSource>();
+
+            var output = Run();
+
+            output.ShouldHaveResults(
+                "SampleTestClass.Pass failed: Exception thrown while attempting to yield input parameters for method: Pass",
+                "SampleTestClass.Fail failed: Exception thrown while attempting to yield input parameters for method: Fail");
+
+            output.ShouldHaveLifecycle();
+        }
+
+        public void ShouldSkipConstructingPerClassUsingCustomFactoryWhenAllCasesFailCustomParameterGeneration()
+        {
+            Convention.ClassExecution
+                      .CreateInstancePerClass()
+                      .UsingFactory(Factory);
+
+            Convention.Parameters.Add<BuggyParameterSource>();
+
+            var output = Run();
+
+            output.ShouldHaveResults(
+                "SampleTestClass.Pass failed: Exception thrown while attempting to yield input parameters for method: Pass",
+                "SampleTestClass.Fail failed: Exception thrown while attempting to yield input parameters for method: Fail");
+
+            output.ShouldHaveLifecycle();
+        }
+
         static object Factory(Type testClass)
         {
             WhereAmI();
             testClass.ShouldEqual(typeof(SampleTestClass));
             return new SampleTestClass();
+        }
+
+        class BuggyParameterSource : ParameterSource
+        {
+            public IEnumerable<object[]> GetParameters(MethodInfo method)
+            {
+                throw new Exception("Exception thrown while attempting to yield input parameters for method: " + method.Name);
+            }
         }
     }
 }

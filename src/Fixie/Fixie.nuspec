@@ -6,11 +6,11 @@
     <title>$title$</title>
     <authors>$author$</authors>
     <owners>$author$</owners>
-    <licenseUrl>https://github.com/plioi/fixie/blob/master/LICENSE.txt</licenseUrl>
-    <projectUrl>https://github.com/plioi/fixie</projectUrl>
-    <iconUrl>https://raw.github.com/plioi/fixie/master/img/fixie_256.png</iconUrl>
+    <licenseUrl>https://github.com/fixie/fixie/blob/master/LICENSE.txt</licenseUrl>
+    <projectUrl>https://fixie.github.io</projectUrl>
+    <iconUrl>https://raw.github.com/fixie/fixie/master/img/fixie_256.png</iconUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <description>$description$</description>
+    <description>A convention-based test framework.</description>
     <references>
       <reference file="Fixie.dll" />
     </references>
@@ -21,5 +21,6 @@
     <file src="..\..\build\Fixie.dll.tdnet" target="lib/net45"></file>
     <file src="..\..\build\Fixie.TestDriven.dll" target="lib/net45"></file>
     <file src="..\..\build\TestDriven.Framework.dll" target="lib/net45"></file>
+    <file src="..\..\build\Fixie.VisualStudio.TestAdapter.dll" target="lib/net45"></file>
   </files>
 </package>

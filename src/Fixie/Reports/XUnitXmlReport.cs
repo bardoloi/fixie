@@ -1,8 +1,8 @@
-﻿using Fixie.Results;
-using System;
+﻿using System;
 using System.Globalization;
 using System.Linq;
 using System.Xml.Linq;
+using Fixie.Execution;
 
 namespace Fixie.Reports
 {
@@ -50,19 +50,10 @@ namespace Fixie.Reports
 
         private static XElement Case(CaseResult caseResult)
         {
-            var nameWithoutParameters = caseResult.Name;
-            var indexOfOpenParen = nameWithoutParameters.IndexOf("(");
-            if (indexOfOpenParen != -1)
-                nameWithoutParameters = nameWithoutParameters.Substring(0, indexOfOpenParen);
-
-            var indexOfLastDot = nameWithoutParameters.LastIndexOf(".");
-            var type = nameWithoutParameters.Substring(0, indexOfLastDot);
-            var method = nameWithoutParameters.Substring(indexOfLastDot + 1);
-
             var @case = new XElement("test",
                 new XAttribute("name", caseResult.Name),
-                new XAttribute("type", type),
-                new XAttribute("method", method),
+                new XAttribute("type", caseResult.MethodGroup.Class),
+                new XAttribute("method", caseResult.MethodGroup.Method),
                 new XAttribute("result",
                     caseResult.Status == CaseStatus.Failed
                         ? "Fail"
@@ -79,9 +70,9 @@ namespace Fixie.Reports
             if (caseResult.Status == CaseStatus.Failed)
                 @case.Add(
                     new XElement("failure",
-                        new XAttribute("exception-type", caseResult.ExceptionSummary.Type),
-                        new XElement("message", new XCData(caseResult.ExceptionSummary.Message)),
-                        new XElement("stack-trace", new XCData(caseResult.ExceptionSummary.StackTrace))));
+                        new XAttribute("exception-type", caseResult.Exceptions.PrimaryException.Type),
+                        new XElement("message", new XCData(caseResult.Exceptions.PrimaryException.Message)),
+                        new XElement("stack-trace", new XCData(caseResult.Exceptions.CompoundStackTrace))));
 
             return @case;
         }

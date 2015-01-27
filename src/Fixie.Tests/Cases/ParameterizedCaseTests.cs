@@ -10,7 +10,7 @@ namespace Fixie.Tests.Cases
     {
         public void ShouldAllowConventionToGeneratePotentiallyManySetsOfInputParametersPerMethod()
         {
-            Convention.Parameters(ParametersFromAttributesWithTypeDefaultFallback);
+            Convention.Parameters.Add<InputAttributeOrDefaultParameterSource>();
 
             Run<ParameterizedTestClass>();
 
@@ -27,31 +27,35 @@ namespace Fixie.Tests.Cases
             Run<ParameterizedTestClass>();
 
             Listener.Entries.ShouldEqual(
-                "Fixie.Tests.Cases.ParameterizedCaseTests+ParameterizedTestClass.IntArg failed: This parameterized test could not be executed, because no input values were available.",
-                "Fixie.Tests.Cases.ParameterizedCaseTests+ParameterizedTestClass.MultipleCasesFromAttributes failed: This parameterized test could not be executed, because no input values were available.",
+                "Fixie.Tests.Cases.ParameterizedCaseTests+ParameterizedTestClass.IntArg failed: Parameter count mismatch.",
+                "Fixie.Tests.Cases.ParameterizedCaseTests+ParameterizedTestClass.MultipleCasesFromAttributes failed: Parameter count mismatch.",
                 "Fixie.Tests.Cases.ParameterizedCaseTests+ParameterizedTestClass.ZeroArgs passed.");
         }
 
         public void ShouldFailWithClearExplanationWhenInputParameterGenerationHasBeenCustomizedYetYieldsZeroSetsOfInputs()
         {
-            Convention.Parameters(ZeroSetsOfInputParameters);
+            Convention.Parameters.Add<EmptyParameterSource>();
 
             Run<ParameterizedTestClass>();
 
             Listener.Entries.ShouldEqual(
-                "Fixie.Tests.Cases.ParameterizedCaseTests+ParameterizedTestClass.IntArg failed: This parameterized test could not be executed, because no input values were available.",
-                "Fixie.Tests.Cases.ParameterizedCaseTests+ParameterizedTestClass.MultipleCasesFromAttributes failed: This parameterized test could not be executed, because no input values were available.",
+                "Fixie.Tests.Cases.ParameterizedCaseTests+ParameterizedTestClass.IntArg failed: Parameter count mismatch.",
+                "Fixie.Tests.Cases.ParameterizedCaseTests+ParameterizedTestClass.MultipleCasesFromAttributes failed: Parameter count mismatch.",
                 "Fixie.Tests.Cases.ParameterizedCaseTests+ParameterizedTestClass.ZeroArgs passed.");
         }
 
         public void ShouldFailWithClearExplanationWhenParameterCountsAreMismatched()
         {
-            Convention.Parameters(Inputs(
+            FixedParameterSource.Parameters = new[]
+            {
                 new object[] { },
                 new object[] { 0 },
                 new object[] { 0, 1 },
                 new object[] { 0, 1, 2 },
-                new object[] { 0, 1, 2, 3 }));
+                new object[] { 0, 1, 2, 3 }
+            };
+
+            Convention.Parameters.Add<FixedParameterSource>();
 
             Run<ParameterizedTestClass>();
 
@@ -75,15 +79,36 @@ namespace Fixie.Tests.Cases
                 "Fixie.Tests.Cases.ParameterizedCaseTests+ParameterizedTestClass.ZeroArgs(0, 1, 2, 3) failed: Parameter count mismatch.");
         }
 
+        public void ShouldFailWithClearExplanationWhenParameterGenerationThrows()
+        {
+            Convention.Parameters.Add<BuggyParameterSource>();
+
+            Run<ParameterizedTestClass>();
+
+            Listener.Entries.ShouldEqual(
+                "Fixie.Tests.Cases.ParameterizedCaseTests+ParameterizedTestClass.IntArg(0) passed.",
+                "Fixie.Tests.Cases.ParameterizedCaseTests+ParameterizedTestClass.IntArg(1) failed: Expected 0, but was 1",
+
+                "Fixie.Tests.Cases.ParameterizedCaseTests+ParameterizedTestClass.MultipleCasesFromAttributes(0) failed: Parameter count mismatch.",
+                "Fixie.Tests.Cases.ParameterizedCaseTests+ParameterizedTestClass.MultipleCasesFromAttributes(1) failed: Parameter count mismatch.",
+
+                "Fixie.Tests.Cases.ParameterizedCaseTests+ParameterizedTestClass.ZeroArgs(0) failed: Parameter count mismatch.",
+                "Fixie.Tests.Cases.ParameterizedCaseTests+ParameterizedTestClass.ZeroArgs(1) failed: Parameter count mismatch.",
+
+                "Fixie.Tests.Cases.ParameterizedCaseTests+ParameterizedTestClass.IntArg failed: Exception thrown while attempting to yield input parameters for method: IntArg",
+                "Fixie.Tests.Cases.ParameterizedCaseTests+ParameterizedTestClass.MultipleCasesFromAttributes failed: Exception thrown while attempting to yield input parameters for method: MultipleCasesFromAttributes",
+                "Fixie.Tests.Cases.ParameterizedCaseTests+ParameterizedTestClass.ZeroArgs failed: Exception thrown while attempting to yield input parameters for method: ZeroArgs");
+        }
+
         public void ShouldResolveGenericTypeParameters()
         {
-            Convention.Parameters(ParametersFromAttributes);
+            Convention.Parameters.Add<InputAttributeParameterSource>();
 
             Run<GenericTestClass>();
 
             Listener.Entries.ShouldEqual(
                 "Fixie.Tests.Cases.ParameterizedCaseTests+GenericTestClass.GenericMethodWithIncorrectParameterCountProvided<System.Object>(123, 123) failed: Parameter count mismatch.",
-                "Fixie.Tests.Cases.ParameterizedCaseTests+GenericTestClass.GenericMethodWithNoInputsProvided<System.Object> failed: This parameterized test could not be executed, because no input values were available.",
+                "Fixie.Tests.Cases.ParameterizedCaseTests+GenericTestClass.GenericMethodWithNoInputsProvided<System.Object> failed: Parameter count mismatch.",
 
                 "Fixie.Tests.Cases.ParameterizedCaseTests+GenericTestClass.MultipleGenericArgumentsMultipleParameters<System.Int32, System.Object>(123, null, 456, System.Int32, System.Object) passed.",
                 "Fixie.Tests.Cases.ParameterizedCaseTests+GenericTestClass.MultipleGenericArgumentsMultipleParameters<System.Int32, System.String>(123, \"stringArg1\", 456, System.Int32, System.String) passed.",
@@ -105,43 +130,67 @@ namespace Fixie.Tests.Cases
                 "Fixie.Tests.Cases.ParameterizedCaseTests+GenericTestClass.SingleGenericArgumentMultipleParameters<System.String>(null, \"stringArg\", System.String) passed.");
         }
 
-        IEnumerable<object[]> ParametersFromAttributes(MethodInfo method)
+        class InputAttributeParameterSource : ParameterSource
         {
-            var inputAttributes = method.GetCustomAttributes<InputAttribute>(true).ToArray();
-
-            if (inputAttributes.Any())
-                foreach (var input in inputAttributes)
-                    yield return input.Parameters;
-        }
-
-        IEnumerable<object[]> ParametersFromAttributesWithTypeDefaultFallback(MethodInfo method)
-        {
-            var parameters = method.GetParameters();
-
-            var inputAttributes = method.GetCustomAttributes<InputAttribute>(true).ToArray();
-
-            if (inputAttributes.Any())
+            public IEnumerable<object[]> GetParameters(MethodInfo method)
             {
-                foreach (var input in inputAttributes)
-                    yield return input.Parameters;
-            }
-            else
-            {
-                yield return parameters.Select(p => Default(p.ParameterType)).ToArray();
+                var inputAttributes = method.GetCustomAttributes<InputAttribute>(true).ToArray();
+
+                if (inputAttributes.Any())
+                    foreach (var input in inputAttributes)
+                        yield return input.Parameters;
             }
         }
 
-        IEnumerable<object[]> ZeroSetsOfInputParameters(MethodInfo method)
+        class InputAttributeOrDefaultParameterSource : ParameterSource
         {
-            yield break;
+            public IEnumerable<object[]> GetParameters(MethodInfo method)
+            {
+                var parameters = method.GetParameters();
+
+                var inputAttributes = method.GetCustomAttributes<InputAttribute>(true).ToArray();
+
+                if (inputAttributes.Any())
+                {
+                    foreach (var input in inputAttributes)
+                        yield return input.Parameters;
+                }
+                else
+                {
+                    yield return parameters.Select(p => Default(p.ParameterType)).ToArray();
+                }
+            }
         }
 
-        Func<MethodInfo, IEnumerable<object[]>> Inputs(params object[][] inputs)
+        class EmptyParameterSource : ParameterSource
         {
-            return method => inputs;
+            public IEnumerable<object[]> GetParameters(MethodInfo method)
+            {
+                yield break;
+            }
         }
 
-        object Default(Type type)
+        class BuggyParameterSource : ParameterSource
+        {
+            public IEnumerable<object[]> GetParameters(MethodInfo method)
+            {
+                yield return new object[] { 0 };
+                yield return new object[] { 1 };
+                throw new Exception("Exception thrown while attempting to yield input parameters for method: " + method.Name);
+            }
+        }
+
+        class FixedParameterSource : ParameterSource
+        {
+            public static object[][] Parameters { get; set; }
+
+            public IEnumerable<object[]> GetParameters(MethodInfo method)
+            {
+                return Parameters;
+            }
+        }
+
+        static object Default(Type type)
         {
             return type.IsValueType ? Activator.CreateInstance(type) : null;
         }

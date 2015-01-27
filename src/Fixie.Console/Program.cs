@@ -4,13 +4,11 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Xml.Linq;
+using Fixie.Execution;
 using Fixie.Reports;
-using Fixie.Results;
 
-namespace Fixie.Console
+namespace Fixie.ConsoleRunner
 {
-    using Console = System.Console;
-
     class Program
     {
         const int FatalError = -1;
@@ -28,8 +26,22 @@ namespace Fixie.Console
                         foreach (var error in commandLineParser.Errors)
                             Console.WriteLine(error);
 
-                    Console.WriteLine("Usage: Fixie.Console [custom-options] assembly-path...");
+                    Console.WriteLine();
+                    Console.WriteLine(CommandLineParser.Usage());
                     return FatalError;
+                }
+
+                foreach (var assemblyPath in commandLineParser.AssemblyPaths)
+                {
+                    if (!File.Exists(assemblyPath))
+                    {
+                        using (Foreground.Red)
+                            Console.WriteLine("Specified test assembly does not exist: " + assemblyPath);
+
+                        Console.WriteLine();
+                        Console.WriteLine(CommandLineParser.Usage());
+                        return FatalError;
+                    }
                 }
 
                 var executionResult = new ExecutionResult();
@@ -39,7 +51,7 @@ namespace Fixie.Console
 
                 foreach (var assemblyPath in commandLineParser.AssemblyPaths)
                 {
-                    var result = Execute(assemblyPath, args);
+                    var result = Execute(assemblyPath, commandLineParser.Options);
 
                     executionResult.Add(result);
                 }
@@ -76,7 +88,7 @@ namespace Fixie.Console
             Console.WriteLine("====== " + line + " ======");
         }
 
-        static void ProduceReports(ILookup<string, string> options, ExecutionResult executionResult)
+        static void ProduceReports(Options options, ExecutionResult executionResult)
         {
             if (options.Contains(CommandLineOption.NUnitXml))
             {
@@ -99,15 +111,30 @@ namespace Fixie.Console
             }
         }
 
-        static AssemblyResult Execute(string assemblyPath, string[] args)
+        static AssemblyResult Execute(string assemblyPath, Options options)
         {
-            var assemblyFullPath = Path.GetFullPath(assemblyPath);
+            var listener = CreateListener(options);
 
-            using (var environment = new ExecutionEnvironment(assemblyFullPath))
+            using (var environment = new ExecutionEnvironment(assemblyPath))
             {
-                var runner = environment.Create<ConsoleRunner>();
-                return runner.RunAssembly(assemblyFullPath, args);
+                return environment.RunAssembly(options, listener);
             }
+        }
+
+        static Listener CreateListener(Options options)
+        {
+            var teamCityExplicitlySpecified = options.Contains(CommandLineOption.TeamCity);
+
+            var runningUnderTeamCity = Environment.GetEnvironmentVariable("TEAMCITY_PROJECT_NAME") != null;
+
+            var useTeamCityListener =
+                (teamCityExplicitlySpecified && options[CommandLineOption.TeamCity].First() == "on") ||
+                (!teamCityExplicitlySpecified && runningUnderTeamCity);
+
+            if (useTeamCityListener)
+                return new TeamCityListener();
+
+            return new ConsoleListener();
         }
     }
 }

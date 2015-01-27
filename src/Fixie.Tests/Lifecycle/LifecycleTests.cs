@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using Fixie.Behaviors;
-using Fixie.Conventions;
+using Fixie.Internal;
 using Should;
 
 namespace Fixie.Tests.Lifecycle
@@ -114,41 +113,41 @@ namespace Fixie.Tests.Lifecycle
             }
         }
 
-        protected static void ClassSetUp(ClassExecution classExecution)
+        protected static void ClassSetUp(Class testClass)
         {
-            classExecution.TestClass.ShouldEqual(typeof(SampleTestClass));
+            testClass.Type.ShouldEqual(typeof(SampleTestClass));
             WhereAmI();
         }
 
-        protected static void ClassTearDown(ClassExecution classExecution)
+        protected static void ClassTearDown(Class testClass)
         {
-            classExecution.TestClass.ShouldEqual(typeof(SampleTestClass));
+            testClass.Type.ShouldEqual(typeof(SampleTestClass));
             WhereAmI();
         }
 
-        protected static void InstanceSetUp(InstanceExecution instanceExecution)
+        protected static void FixtureSetUp(Fixture fixture)
         {
-            instanceExecution.TestClass.ShouldEqual(typeof(SampleTestClass));
+            fixture.Class.Type.ShouldEqual(typeof(SampleTestClass));
             WhereAmI();
         }
 
-        protected static void InstanceTearDown(InstanceExecution instanceExecution)
+        protected static void FixtureTearDown(Fixture fixture)
         {
-            instanceExecution.TestClass.ShouldEqual(typeof(SampleTestClass));
+            fixture.Class.Type.ShouldEqual(typeof(SampleTestClass));
             WhereAmI();
         }
 
-        protected static void CaseSetUp(CaseExecution caseExecution)
+        protected static void CaseSetUp(Case @case)
         {
-            caseExecution.Case.Class.ShouldEqual(typeof(SampleTestClass));
-            caseExecution.Instance.ShouldBeType<SampleTestClass>();
+            @case.Class.ShouldEqual(typeof(SampleTestClass));
+            @case.Fixture.Instance.ShouldBeType<SampleTestClass>();
             WhereAmI();
         }
 
-        protected static void CaseTearDown(CaseExecution caseExecution)
+        protected static void CaseTearDown(Case @case)
         {
-            caseExecution.Case.Class.ShouldEqual(typeof(SampleTestClass));
-            caseExecution.Instance.ShouldBeType<SampleTestClass>();
+            @case.Class.ShouldEqual(typeof(SampleTestClass));
+            @case.Fixture.Instance.ShouldBeType<SampleTestClass>();
             WhereAmI();
         }
 
@@ -162,31 +161,31 @@ namespace Fixie.Tests.Lifecycle
 
         protected class CaseSetUpTearDown : CaseBehavior
         {
-            public void Execute(CaseExecution caseExecution, Action next)
+            public void Execute(Case @case, Action next)
             {
-                CaseSetUp(caseExecution);
+                CaseSetUp(@case);
                 next();
-                CaseTearDown(caseExecution);
+                CaseTearDown(@case);
             }
         }
 
-        protected class InstanceSetUpTearDown : InstanceBehavior
+        protected class FixtureSetUpTearDown : FixtureBehavior
         {
-            public void Execute(InstanceExecution instanceExecution, Action next)
+            public void Execute(Fixture fixture, Action next)
             {
-                InstanceSetUp(instanceExecution);
+                FixtureSetUp(fixture);
                 next();
-                InstanceTearDown(instanceExecution);
+                FixtureTearDown(fixture);
             }
         }
 
         protected class ClassSetUpTearDown : ClassBehavior
         {
-            public void Execute(ClassExecution classExecution, Action next)
+            public void Execute(Class testClass, Action next)
             {
-                ClassSetUp(classExecution);
+                ClassSetUp(testClass);
                 next();
-                ClassTearDown(classExecution);
+                ClassTearDown(testClass);
             }
         }
     }

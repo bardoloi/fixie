@@ -8,8 +8,6 @@ namespace Fixie.Tests
 {
     public class ReflectionExtensionsTests
     {
-        const BindingFlags InstanceMethods = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
-
         public void CanDetectVoidReturnType()
         {
             Method("ReturnsVoid").IsVoid().ShouldBeTrue();
@@ -88,12 +86,6 @@ namespace Fixie.Tests
             opCode.IsInNamespace("System.Reflection.Emit").ShouldBeTrue();
             opCode.IsInNamespace("System.Reflection.Emit.OpCode").ShouldBeFalse();
             opCode.IsInNamespace("System.Reflection.Typo").ShouldBeFalse();
-        }
-
-        public void CanGetAssemblyFileName()
-        {
-            typeof(ReflectionExtensionsTests).Assembly.FileName().ShouldEqual("Fixie.Tests.dll");
-            typeof(Runner).Assembly.FileName().ShouldEqual("Fixie.dll");
         }
 
         void ReturnsVoid() { }

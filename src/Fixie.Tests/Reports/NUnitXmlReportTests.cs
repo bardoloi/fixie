@@ -8,8 +8,9 @@ using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Linq;
 using System.Xml.Schema;
+using Fixie.Execution;
+using Fixie.Internal;
 using Fixie.Reports;
-using Fixie.Results;
 using Should;
 
 namespace Fixie.Tests.Reports
@@ -24,7 +25,7 @@ namespace Fixie.Tests.Reports
             var executionResult = new ExecutionResult();
             var convention = SelfTestConvention.Build();
             convention.CaseExecution.Skip(x => x.Method.Has<SkipAttribute>(), x => x.Method.GetCustomAttribute<SkipAttribute>().Reason);
-            convention.Parameters(FromParametersAttribute);
+            convention.Parameters.Add<InputAttributeParameterSource>();
             var assemblyResult = runner.RunTypes(GetType().Assembly, convention, typeof(PassFailTestClass));
             executionResult.Add(assemblyResult);
 
@@ -35,9 +36,12 @@ namespace Fixie.Tests.Reports
             CleanBrittleValues(actual.ToString(SaveOptions.DisableFormatting)).ShouldEqual(ExpectedReport);
         }
 
-        static IEnumerable<object[]> FromParametersAttribute(MethodInfo method)
+        class InputAttributeParameterSource : ParameterSource
         {
-            return method.GetCustomAttributes<ParametersAttribute>().Select(x => x.Parameters);
+            public IEnumerable<object[]> GetParameters(MethodInfo method)
+            {
+                return method.GetCustomAttributes<InputAttribute>().Select(x => x.Parameters);
+            }
         }
 
         static void XsdValidate(XDocument doc)
@@ -95,8 +99,8 @@ namespace Fixie.Tests.Reports
 
             public void Pass() { }
 
-            [Parameters(false)]
-            [Parameters(true)]
+            [Input(false)]
+            [Input(true)]
             public void PassIfTrue(bool pass)
             {
                 if (!pass) throw new FailureException();
@@ -116,9 +120,9 @@ namespace Fixie.Tests.Reports
         }
 
         [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
-        class ParametersAttribute : Attribute
+        class InputAttribute : Attribute
         {
-            public ParametersAttribute(params object[] parameters)
+            public InputAttribute(params object[] parameters)
             {
                 Parameters = parameters;
             }

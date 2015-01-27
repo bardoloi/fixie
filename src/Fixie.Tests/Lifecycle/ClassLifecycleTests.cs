@@ -1,5 +1,4 @@
 using System;
-using Fixie.Behaviors;
 
 namespace Fixie.Tests.Lifecycle
 {
@@ -7,7 +6,7 @@ namespace Fixie.Tests.Lifecycle
     {
         class Inner : ClassBehavior
         {
-            public void Execute(ClassExecution classExecution, Action next)
+            public void Execute(Class testClass, Action next)
             {
                 Console.WriteLine("Inner Before");
                 next();
@@ -17,7 +16,7 @@ namespace Fixie.Tests.Lifecycle
 
         class Outer : ClassBehavior
         {
-            public void Execute(ClassExecution classExecution, Action next)
+            public void Execute(Class testClass, Action next)
             {
                 Console.WriteLine("Outer Before");
                 next();
@@ -27,7 +26,7 @@ namespace Fixie.Tests.Lifecycle
 
         class DoNothing : ClassBehavior
         {
-            public void Execute(ClassExecution classExecution, Action next)
+            public void Execute(Class testClass, Action next)
             {
                 //Behavior chooses not to invoke next().
                 //Since the test classes are never intantiated,
@@ -38,7 +37,7 @@ namespace Fixie.Tests.Lifecycle
 
         class ThrowException : ClassBehavior
         {
-            public void Execute(ClassExecution classExecution, Action next)
+            public void Execute(Class testClass, Action next)
             {
                 Console.WriteLine("Unsafe class execution behavior");
                 throw new Exception("Unsafe class execution behavior threw!");
@@ -47,7 +46,7 @@ namespace Fixie.Tests.Lifecycle
 
         class ThrowPreservedException : ClassBehavior
         {
-            public void Execute(ClassExecution classExecution, Action next)
+            public void Execute(Class testClass, Action next)
             {
                 Console.WriteLine("Unsafe class execution behavior");
                 try
@@ -61,7 +60,7 @@ namespace Fixie.Tests.Lifecycle
             }
         }
 
-        public void ShouldAllowWrappingClassWithBehaviorsWhenConstructingPerCase()
+        public void ShouldAllowWrappingClassWithBehaviorTypesWhenConstructingPerCase()
         {
             Convention.ClassExecution
                       .CreateInstancePerCase()
@@ -81,12 +80,110 @@ namespace Fixie.Tests.Lifecycle
                 "Inner After", "Outer After");
         }
 
-        public void ShouldAllowWrappingClassWithBehaviorsWhenConstructingPerClass()
+        public void ShouldAllowWrappingClassWithBehaviorTypesWhenConstructingPerClass()
         {
             Convention.ClassExecution
                       .CreateInstancePerClass()
                       .Wrap<Inner>()
                       .Wrap<Outer>();
+
+            var output = Run();
+
+            output.ShouldHaveResults(
+                "SampleTestClass.Pass passed.",
+                "SampleTestClass.Fail failed: 'Fail' failed!");
+
+            output.ShouldHaveLifecycle(
+                "Outer Before", "Inner Before",
+                ".ctor", "Pass", "Fail", "Dispose",
+                "Inner After", "Outer After");
+        }
+
+        public void ShouldAllowWrappingClassWithBehaviorInstancesWhenConstructingPerCase()
+        {
+            Convention.ClassExecution
+                      .CreateInstancePerCase()
+                      .Wrap(new Inner())
+                      .Wrap(new Outer());
+
+            var output = Run();
+
+            output.ShouldHaveResults(
+                "SampleTestClass.Pass passed.",
+                "SampleTestClass.Fail failed: 'Fail' failed!");
+
+            output.ShouldHaveLifecycle(
+                "Outer Before", "Inner Before",
+                ".ctor", "Pass", "Dispose",
+                ".ctor", "Fail", "Dispose",
+                "Inner After", "Outer After");
+        }
+
+        public void ShouldAllowWrappingClassWithBehaviorInstancesWhenConstructingPerClass()
+        {
+            Convention.ClassExecution
+                      .CreateInstancePerClass()
+                      .Wrap(new Inner())
+                      .Wrap(new Outer());
+
+            var output = Run();
+
+            output.ShouldHaveResults(
+                "SampleTestClass.Pass passed.",
+                "SampleTestClass.Fail failed: 'Fail' failed!");
+
+            output.ShouldHaveLifecycle(
+                "Outer Before", "Inner Before",
+                ".ctor", "Pass", "Fail", "Dispose",
+                "Inner After", "Outer After");
+        }
+
+        public void ShouldAllowWrappingClassWithBehaviorLambdasWhenConstructingPerCase()
+        {
+            Convention.ClassExecution
+                      .CreateInstancePerCase()
+                      .Wrap((@class, next) =>
+                      {
+                          Console.WriteLine("Inner Before");
+                          next();
+                          Console.WriteLine("Inner After");
+                      })
+                      .Wrap((@class, next) =>
+                      {
+                          Console.WriteLine("Outer Before");
+                          next();
+                          Console.WriteLine("Outer After");
+                      });
+
+            var output = Run();
+
+            output.ShouldHaveResults(
+                "SampleTestClass.Pass passed.",
+                "SampleTestClass.Fail failed: 'Fail' failed!");
+
+            output.ShouldHaveLifecycle(
+                "Outer Before", "Inner Before",
+                ".ctor", "Pass", "Dispose",
+                ".ctor", "Fail", "Dispose",
+                "Inner After", "Outer After");
+        }
+
+        public void ShouldAllowWrappingClassWithBehaviorLambdasWhenConstructingPerClass()
+        {
+            Convention.ClassExecution
+                      .CreateInstancePerClass()
+                      .Wrap((@class, next) =>
+                      {
+                          Console.WriteLine("Inner Before");
+                          next();
+                          Console.WriteLine("Inner After");
+                      })
+                      .Wrap((@class, next) =>
+                      {
+                          Console.WriteLine("Outer Before");
+                          next();
+                          Console.WriteLine("Outer After");
+                      });
 
             var output = Run();
 
